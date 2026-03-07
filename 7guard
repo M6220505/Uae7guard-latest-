@@ -1,0 +1,547 @@
+import { useState, useEffect, useRef } from “react”;
+
+const COLORS = {
+bg: “#070B14”,
+bgCard: “#0D1525”,
+bgCard2: “#111A2E”,
+gold: “#C9A84C”,
+goldLight: “#F0CC6E”,
+blue: “#1A3A6E”,
+blueLight: “#2563EB”,
+accent: “#00D4FF”,
+text: “#E8EDF5”,
+textMuted: “#7A8BA6”,
+border: “#1E2D4A”,
+danger: “#FF4444”,
+success: “#00C97A”,
+};
+
+const NAV_LINKS = [“Features”, “Pricing”, “FAQ”];
+
+const FEATURES = [
+{ icon: “🔍”, title: “Smart Contract Scan”, desc: “Analyze any wallet or contract for hidden risks, honeypots, and rug pull mechanisms in seconds.” },
+{ icon: “🛡️”, title: “Real-Time Protection”, desc: “Continuous monitoring alerts you the moment suspicious activity is detected on tracked wallets.” },
+{ icon: “📊”, title: “Risk Score Engine”, desc: “Our proprietary algorithm scores each asset 0-100 so you know exactly how safe your investment is.” },
+{ icon: “🌐”, title: “Multi-Chain Support”, desc: “ETH, BSC, SOL, TRON — scan across all major blockchains from one unified dashboard.” },
+{ icon: “⚡”, title: “Instant Reports”, desc: “Get full PDF audit reports in under 10 seconds. Share with your team or clients effortlessly.” },
+{ icon: “🔔”, title: “Telegram & Email Alerts”, desc: “Never miss a threat. Receive instant notifications wherever you are.” },
+];
+
+const PLANS = [
+{ name: “Starter”, price: “$4.99”, period: “/mo”, scans: “50 scans/month”, features: [“Smart Contract Scan”, “Risk Score”, “2 Chains”, “Email Alerts”], highlight: false },
+{ name: “Pro”, price: “$9.99”, period: “/mo”, scans: “Unlimited scans”, features: [“Everything in Starter”, “Real-Time Monitoring”, “All Chains”, “PDF Reports”, “Telegram Alerts”], highlight: true },
+{ name: “Enterprise”, price: “$14.99”, period: “/mo”, scans: “Team Access”, features: [“Everything in Pro”, “5 Team Members”, “API Access”, “Priority Support”, “Custom Alerts”], highlight: false },
+];
+
+const FAQS = [
+{ q: “How does UAE7Guard detect scams?”, a: “We use on-chain data analysis, liquidity checks, ownership patterns, and smart contract bytecode inspection to identify risks before you invest.” },
+{ q: “Which blockchains are supported?”, a: “We support Ethereum, BSC, Solana, TRON, Polygon, and Avalanche. More chains are added monthly.” },
+{ q: “Is my data safe?”, a: “We never store private keys. All scans are read-only. Your wallet data is encrypted and never sold.” },
+{ q: “Can I cancel anytime?”, a: “Yes, cancel at any time from your dashboard. No contracts, no hidden fees.” },
+];
+
+// ─── Animated background particles ───
+function Particles() {
+return (
+<div style={{ position: “fixed”, inset: 0, pointerEvents: “none”, zIndex: 0, overflow: “hidden” }}>
+{[…Array(24)].map((_, i) => (
+<div key={i} style={{
+position: “absolute”,
+borderRadius: “50%”,
+background: i % 3 === 0 ? COLORS.gold : i % 3 === 1 ? COLORS.accent : COLORS.blueLight,
+opacity: 0.04 + (i % 5) * 0.01,
+width: 4 + (i % 6) * 3,
+height: 4 + (i % 6) * 3,
+left: `${(i * 4.1) % 100}%`,
+top: `${(i * 7.3) % 100}%`,
+animation: `float${i % 4} ${8 + (i % 6)}s ease-in-out infinite`,
+animationDelay: `${(i * 0.4) % 6}s`,
+}} />
+))}
+<style>{`@keyframes float0 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-30px)} } @keyframes float1 { 0%,100%{transform:translateY(0) translateX(0)} 50%{transform:translateY(-20px) translateX(15px)} } @keyframes float2 { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-25px) rotate(180deg)} } @keyframes float3 { 0%,100%{transform:translateY(0) translateX(0)} 33%{transform:translateY(-15px) translateX(-10px)} 66%{transform:translateY(-30px) translateX(10px)} }`}</style>
+</div>
+);
+}
+
+// ─── Glowing badge ───
+function Badge({ children }) {
+return (
+<span style={{
+display: “inline-flex”, alignItems: “center”, gap: 6,
+background: `linear-gradient(135deg, ${COLORS.gold}22, ${COLORS.goldLight}11)`,
+border: `1px solid ${COLORS.gold}55`,
+color: COLORS.goldLight, fontSize: 12, fontWeight: 700, letterSpacing: 2,
+padding: “6px 16px”, borderRadius: 100, textTransform: “uppercase”,
+boxShadow: `0 0 20px ${COLORS.gold}22`,
+}}>{children}</span>
+);
+}
+
+// ─── Landing Page ───
+function Landing({ setPage }) {
+const [scanInput, setScanInput] = useState(””);
+const [scanning, setScanning] = useState(false);
+const [scanResult, setScanResult] = useState(null);
+const [activeFAQ, setActiveFAQ] = useState(null);
+const [visible, setVisible] = useState(false);
+
+useEffect(() => { setTimeout(() => setVisible(true), 100); }, []);
+
+const handleScan = () => {
+if (!scanInput.trim()) return;
+setScanning(true);
+setScanResult(null);
+setTimeout(() => {
+setScanning(false);
+setScanResult({ score: Math.floor(Math.random() * 40) + 60, status: “Safe”, address: scanInput });
+}, 2000);
+};
+
+return (
+<div style={{ minHeight: “100vh”, fontFamily: “‘Syne’, sans-serif” }}>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+```
+  {/* NAV */}
+  <nav style={{
+    position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "0 6%", height: 68,
+    background: `${COLORS.bg}EE`, backdropFilter: "blur(20px)",
+    borderBottom: `1px solid ${COLORS.border}`,
+  }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ width: 32, height: 32, borderRadius: 8, background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🛡️</div>
+      <span style={{ color: COLORS.text, fontWeight: 800, fontSize: 18, letterSpacing: 1 }}>UAE<span style={{ color: COLORS.gold }}>7</span>Guard</span>
+    </div>
+    <div style={{ display: "flex", gap: 32 }}>
+      {NAV_LINKS.map(l => (
+        <a key={l} href={`#${l.toLowerCase()}`} style={{ color: COLORS.textMuted, fontSize: 14, fontWeight: 600, textDecoration: "none", letterSpacing: 1, transition: "color .2s" }}
+          onMouseEnter={e => e.target.style.color = COLORS.gold}
+          onMouseLeave={e => e.target.style.color = COLORS.textMuted}>{l}</a>
+      ))}
+    </div>
+    <div style={{ display: "flex", gap: 10 }}>
+      <button onClick={() => setPage("login")} style={{ background: "transparent", border: `1px solid ${COLORS.border}`, color: COLORS.text, padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>Login</button>
+      <button onClick={() => setPage("register")} style={{ background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, border: "none", color: "#070B14", padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 800, fontFamily: "inherit" }}>Get Started</button>
+    </div>
+  </nav>
+
+  {/* HERO */}
+  <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "120px 6% 80px", position: "relative" }}>
+    <div style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(30px)", transition: "all 1s ease", maxWidth: 800 }}>
+      <Badge>🇦🇪 Trusted in UAE & GCC</Badge>
+      <h1 style={{ fontSize: "clamp(36px, 6vw, 72px)", fontWeight: 800, color: COLORS.text, lineHeight: 1.1, margin: "24px 0 20px", letterSpacing: -1 }}>
+        Protect Your Crypto<br />
+        <span style={{ background: `linear-gradient(90deg, ${COLORS.gold}, ${COLORS.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Before It's Too Late</span>
+      </h1>
+      <p style={{ color: COLORS.textMuted, fontSize: 18, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 40px" }}>
+        UAE7Guard scans wallets, contracts, and tokens for scams, rug pulls, and hidden risks — in under 10 seconds.
+      </p>
+
+      {/* Live Scanner */}
+      <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 24, maxWidth: 560, margin: "0 auto 32px" }}>
+        <div style={{ display: "flex", gap: 10 }}>
+          <input value={scanInput} onChange={e => setScanInput(e.target.value)}
+            placeholder="Paste wallet or contract address..."
+            style={{ flex: 1, background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "12px 16px", color: COLORS.text, fontSize: 14, fontFamily: "Space Mono, monospace", outline: "none" }}
+            onKeyDown={e => e.key === "Enter" && handleScan()} />
+          <button onClick={handleScan} style={{ background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, border: "none", borderRadius: 10, padding: "12px 24px", color: "#070B14", fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit", minWidth: 100 }}>
+            {scanning ? "Scanning..." : "Scan Free"}
+          </button>
+        </div>
+        {scanResult && (
+          <div style={{ marginTop: 16, padding: 16, background: `${COLORS.success}11`, border: `1px solid ${COLORS.success}44`, borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ color: COLORS.success, fontWeight: 700, fontSize: 13 }}>✅ Scan Complete</div>
+              <div style={{ color: COLORS.textMuted, fontSize: 12, fontFamily: "Space Mono", marginTop: 4 }}>{scanResult.address.slice(0, 20)}...</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: COLORS.success }}>{scanResult.score}</div>
+              <div style={{ fontSize: 11, color: COLORS.textMuted }}>Safety Score</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+        {["50K+ Scans Done", "99.2% Accuracy", "Trusted by UAE Investors"].map(t => (
+          <span key={t} style={{ color: COLORS.textMuted, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ color: COLORS.gold }}>✦</span> {t}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    {/* Decorative glow */}
+    <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translateX(-50%)", width: 600, height: 300, background: `radial-gradient(ellipse, ${COLORS.gold}08 0%, transparent 70%)`, pointerEvents: "none" }} />
+  </section>
+
+  {/* FEATURES */}
+  <section id="features" style={{ padding: "100px 6%", position: "relative" }}>
+    <div style={{ textAlign: "center", marginBottom: 60 }}>
+      <Badge>Features</Badge>
+      <h2 style={{ fontSize: 40, fontWeight: 800, color: COLORS.text, margin: "16px 0 12px" }}>Everything You Need to Stay Safe</h2>
+      <p style={{ color: COLORS.textMuted, fontSize: 16 }}>Professional-grade protection tools in one platform</p>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24, maxWidth: 1100, margin: "0 auto" }}>
+      {FEATURES.map((f, i) => (
+        <div key={i} style={{
+          background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 28,
+          transition: "all .3s", cursor: "default",
+        }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = COLORS.gold + "55"; e.currentTarget.style.transform = "translateY(-4px)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.transform = "translateY(0)"; }}>
+          <div style={{ fontSize: 32, marginBottom: 16 }}>{f.icon}</div>
+          <h3 style={{ color: COLORS.text, fontSize: 17, fontWeight: 700, marginBottom: 10 }}>{f.title}</h3>
+          <p style={{ color: COLORS.textMuted, fontSize: 14, lineHeight: 1.7 }}>{f.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {/* PRICING */}
+  <section id="pricing" style={{ padding: "100px 6%", background: `linear-gradient(180deg, transparent, ${COLORS.bgCard2}44, transparent)` }}>
+    <div style={{ textAlign: "center", marginBottom: 60 }}>
+      <Badge>Pricing</Badge>
+      <h2 style={{ fontSize: 40, fontWeight: 800, color: COLORS.text, margin: "16px 0 12px" }}>Simple, Transparent Pricing</h2>
+      <p style={{ color: COLORS.textMuted, fontSize: 16 }}>Cancel anytime. No hidden fees.</p>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24, maxWidth: 900, margin: "0 auto" }}>
+      {PLANS.map((p, i) => (
+        <div key={i} style={{
+          background: p.highlight ? `linear-gradient(135deg, ${COLORS.blue}66, ${COLORS.bgCard})` : COLORS.bgCard,
+          border: `2px solid ${p.highlight ? COLORS.gold : COLORS.border}`,
+          borderRadius: 20, padding: 32, position: "relative", textAlign: "center",
+          boxShadow: p.highlight ? `0 0 40px ${COLORS.gold}22` : "none",
+        }}>
+          {p.highlight && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: `linear-gradient(90deg, ${COLORS.gold}, ${COLORS.goldLight})`, color: "#070B14", fontSize: 11, fontWeight: 800, padding: "4px 16px", borderRadius: 100, letterSpacing: 1 }}>MOST POPULAR</div>}
+          <h3 style={{ color: p.highlight ? COLORS.gold : COLORS.text, fontSize: 20, fontWeight: 800, marginBottom: 8 }}>{p.name}</h3>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 2, marginBottom: 6 }}>
+            <span style={{ fontSize: 44, fontWeight: 800, color: COLORS.text }}>{p.price}</span>
+            <span style={{ color: COLORS.textMuted, marginBottom: 8 }}>{p.period}</span>
+          </div>
+          <div style={{ color: COLORS.accent, fontSize: 13, fontWeight: 600, marginBottom: 24 }}>{p.scans}</div>
+          <div style={{ marginBottom: 28 }}>
+            {p.features.map((f, j) => (
+              <div key={j} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.textMuted, fontSize: 14, textAlign: "left" }}>
+                <span style={{ color: COLORS.success, flexShrink: 0 }}>✓</span> {f}
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setPage("register")} style={{
+            width: "100%", padding: "14px", borderRadius: 12, fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit",
+            background: p.highlight ? `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})` : "transparent",
+            border: p.highlight ? "none" : `1px solid ${COLORS.border}`,
+            color: p.highlight ? "#070B14" : COLORS.text,
+          }}>Get Started</button>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {/* FAQ */}
+  <section id="faq" style={{ padding: "100px 6%" }}>
+    <div style={{ textAlign: "center", marginBottom: 60 }}>
+      <Badge>FAQ</Badge>
+      <h2 style={{ fontSize: 40, fontWeight: 800, color: COLORS.text, margin: "16px 0" }}>Common Questions</h2>
+    </div>
+    <div style={{ maxWidth: 680, margin: "0 auto" }}>
+      {FAQS.map((f, i) => (
+        <div key={i} style={{ borderBottom: `1px solid ${COLORS.border}`, marginBottom: 4 }}>
+          <button onClick={() => setActiveFAQ(activeFAQ === i ? null : i)} style={{
+            width: "100%", background: "none", border: "none", textAlign: "left", padding: "20px 0", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center",
+            color: COLORS.text, fontSize: 16, fontWeight: 600, fontFamily: "inherit",
+          }}>
+            {f.q}
+            <span style={{ color: COLORS.gold, fontSize: 20, transform: activeFAQ === i ? "rotate(45deg)" : "rotate(0)", transition: "transform .2s" }}>+</span>
+          </button>
+          {activeFAQ === i && <p style={{ color: COLORS.textMuted, fontSize: 15, lineHeight: 1.7, paddingBottom: 16 }}>{f.a}</p>}
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {/* CTA */}
+  <section style={{ padding: "80px 6%", textAlign: "center" }}>
+    <div style={{ background: `linear-gradient(135deg, ${COLORS.bgCard}, ${COLORS.blue}44)`, border: `1px solid ${COLORS.gold}33`, borderRadius: 24, padding: "60px 40px", maxWidth: 700, margin: "0 auto", boxShadow: `0 0 60px ${COLORS.gold}11` }}>
+      <h2 style={{ fontSize: 36, fontWeight: 800, color: COLORS.text, marginBottom: 16 }}>Start Protecting Your Portfolio</h2>
+      <p style={{ color: COLORS.textMuted, fontSize: 16, marginBottom: 32 }}>Join 50,000+ investors in UAE & GCC who scan before they invest.</p>
+      <button onClick={() => setPage("register")} style={{ background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, border: "none", borderRadius: 12, padding: "16px 48px", color: "#070B14", fontSize: 17, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+        Create Free Account →
+      </button>
+    </div>
+  </section>
+
+  {/* FOOTER */}
+  <footer style={{ padding: "40px 6%", borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+    <span style={{ color: COLORS.text, fontWeight: 800 }}>UAE<span style={{ color: COLORS.gold }}>7</span>Guard</span>
+    <span style={{ color: COLORS.textMuted, fontSize: 13 }}>© 2025 UAE7Guard. Built for crypto safety in the UAE.</span>
+    <div style={{ display: "flex", gap: 20 }}>
+      {["Privacy", "Terms", "Contact"].map(l => <a key={l} href="#" style={{ color: COLORS.textMuted, fontSize: 13, textDecoration: "none" }}>{l}</a>)}
+    </div>
+  </footer>
+</div>
+```
+
+);
+}
+
+// ─── Auth Pages ───
+function AuthPage({ type, setPage }) {
+const [email, setEmail] = useState(””);
+const [pass, setPass] = useState(””);
+const [loading, setLoading] = useState(false);
+const isLogin = type === “login”;
+
+const handleSubmit = () => {
+setLoading(true);
+setTimeout(() => { setLoading(false); setPage(“dashboard”); }, 1500);
+};
+
+return (
+<div style={{ minHeight: “100vh”, display: “flex”, alignItems: “center”, justifyContent: “center”, padding: 24 }}>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 24, padding: 48, width: “100%”, maxWidth: 420, boxShadow: `0 0 60px ${COLORS.gold}0A` }}>
+<div style={{ textAlign: “center”, marginBottom: 36 }}>
+<div style={{ fontSize: 36, marginBottom: 12 }}>🛡️</div>
+<h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 8 }}>
+{isLogin ? “Welcome Back” : “Create Account”}
+</h1>
+<p style={{ color: COLORS.textMuted, fontSize: 14 }}>{isLogin ? “Sign in to your dashboard” : “Start protecting your crypto today”}</p>
+</div>
+
+```
+    {["Email", "Password"].map((label, i) => (
+      <div key={label} style={{ marginBottom: 16 }}>
+        <label style={{ color: COLORS.textMuted, fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>{label}</label>
+        <input
+          type={i === 1 ? "password" : "email"}
+          value={i === 0 ? email : pass}
+          onChange={e => i === 0 ? setEmail(e.target.value) : setPass(e.target.value)}
+          placeholder={i === 0 ? "you@example.com" : "••••••••"}
+          style={{ width: "100%", background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "12px 16px", color: COLORS.text, fontSize: 15, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
+        />
+      </div>
+    ))}
+
+    {!isLogin && (
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ color: COLORS.textMuted, fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Choose Plan</label>
+        <select style={{ width: "100%", background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "12px 16px", color: COLORS.text, fontSize: 14, fontFamily: "inherit", outline: "none" }}>
+          <option>Starter — $4.99/mo</option>
+          <option>Pro — $9.99/mo</option>
+          <option>Enterprise — $14.99/mo</option>
+        </select>
+      </div>
+    )}
+
+    <button onClick={handleSubmit} style={{
+      width: "100%", background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`,
+      border: "none", borderRadius: 12, padding: "14px", color: "#070B14",
+      fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", marginTop: 8,
+    }}>{loading ? "..." : isLogin ? "Sign In →" : "Create Account →"}</button>
+
+    <p style={{ textAlign: "center", color: COLORS.textMuted, fontSize: 14, marginTop: 20 }}>
+      {isLogin ? "No account?" : "Already have an account?"}{" "}
+      <span onClick={() => setPage(isLogin ? "register" : "login")} style={{ color: COLORS.gold, cursor: "pointer", fontWeight: 600 }}>
+        {isLogin ? "Register" : "Sign In"}
+      </span>
+    </p>
+    <p style={{ textAlign: "center", marginTop: 12 }}>
+      <span onClick={() => setPage("landing")} style={{ color: COLORS.textMuted, fontSize: 13, cursor: "pointer" }}>← Back to Home</span>
+    </p>
+  </div>
+</div>
+```
+
+);
+}
+
+// ─── Dashboard ───
+function Dashboard({ setPage }) {
+const [scanInput, setScanInput] = useState(””);
+const [scanning, setScanning] = useState(false);
+const [results, setResults] = useState([
+{ address: “0x71C7…4a9F”, score: 92, status: “Safe”, chain: “ETH”, time: “2h ago” },
+{ address: “0xB4F2…88E1”, score: 34, status: “Danger”, chain: “BSC”, time: “5h ago” },
+{ address: “0x9A1C…F33D”, score: 78, status: “Safe”, chain: “ETH”, time: “1d ago” },
+]);
+const [activeTab, setActiveTab] = useState(“scan”);
+
+const handleScan = () => {
+if (!scanInput.trim()) return;
+setScanning(true);
+setTimeout(() => {
+const score = Math.floor(Math.random() * 100);
+setResults(prev => [{ address: scanInput.slice(0, 10) + “…”, score, status: score > 60 ? “Safe” : “Danger”, chain: “ETH”, time: “Just now” }, …prev]);
+setScanInput(””); setScanning(false);
+}, 2000);
+};
+
+const stats = [
+{ label: “Total Scans”, value: results.length, icon: “🔍”, color: COLORS.accent },
+{ label: “Safe Assets”, value: results.filter(r => r.status === “Safe”).length, icon: “✅”, color: COLORS.success },
+{ label: “Threats Found”, value: results.filter(r => r.status === “Danger”).length, icon: “⚠️”, color: COLORS.danger },
+{ label: “Plan”, value: “Pro”, icon: “⚡”, color: COLORS.gold },
+];
+
+return (
+<div style={{ minHeight: “100vh”, display: “flex”, fontFamily: “‘Syne’, sans-serif” }}>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+```
+  {/* Sidebar */}
+  <div style={{ width: 220, background: COLORS.bgCard, borderRight: `1px solid ${COLORS.border}`, padding: "24px 16px", flexShrink: 0, display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 36, paddingLeft: 8 }}>
+      <span style={{ fontSize: 20 }}>🛡️</span>
+      <span style={{ color: COLORS.text, fontWeight: 800, fontSize: 16 }}>UAE<span style={{ color: COLORS.gold }}>7</span>Guard</span>
+    </div>
+    {[
+      { id: "scan", icon: "🔍", label: "Scanner" },
+      { id: "history", icon: "📋", label: "History" },
+      { id: "alerts", icon: "🔔", label: "Alerts" },
+      { id: "settings", icon: "⚙️", label: "Settings" },
+    ].map(item => (
+      <button key={item.id} onClick={() => setActiveTab(item.id)} style={{
+        display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, marginBottom: 4, cursor: "pointer",
+        background: activeTab === item.id ? `${COLORS.gold}18` : "transparent", border: `1px solid ${activeTab === item.id ? COLORS.gold + "44" : "transparent"}`,
+        color: activeTab === item.id ? COLORS.gold : COLORS.textMuted, fontSize: 14, fontWeight: 600, fontFamily: "inherit", textAlign: "left",
+      }}>{item.icon} {item.label}</button>
+    ))}
+    <div style={{ marginTop: "auto" }}>
+      <button onClick={() => setPage("landing")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, cursor: "pointer", background: "transparent", border: "none", color: COLORS.textMuted, fontSize: 14, fontFamily: "inherit", width: "100%" }}>
+        🚪 Logout
+      </button>
+    </div>
+  </div>
+
+  {/* Main */}
+  <div style={{ flex: 1, padding: "32px 40px", overflowY: "auto" }}>
+    <div style={{ marginBottom: 28 }}>
+      <h1 style={{ fontSize: 26, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>
+        {activeTab === "scan" && "Scan Address"}
+        {activeTab === "history" && "Scan History"}
+        {activeTab === "alerts" && "Alerts"}
+        {activeTab === "settings" && "Account Settings"}
+      </h1>
+      <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Welcome back, Mohamed 👋</p>
+    </div>
+
+    {/* Stats */}
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      {stats.map((s, i) => (
+        <div key={i} style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 14, padding: "20px 18px" }}>
+          <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
+          <div style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 2 }}>{s.label}</div>
+        </div>
+      ))}
+    </div>
+
+    {activeTab === "scan" && (
+      <>
+        {/* Scanner */}
+        <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 28, marginBottom: 24 }}>
+          <h3 style={{ color: COLORS.text, fontSize: 16, fontWeight: 700, marginBottom: 16 }}>🔍 New Scan</h3>
+          <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+            <input value={scanInput} onChange={e => setScanInput(e.target.value)}
+              placeholder="Enter wallet or contract address..."
+              style={{ flex: 1, background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "12px 16px", color: COLORS.text, fontSize: 14, fontFamily: "Space Mono, monospace", outline: "none" }}
+              onKeyDown={e => e.key === "Enter" && handleScan()} />
+            <select style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "12px", color: COLORS.text, fontFamily: "inherit", outline: "none" }}>
+              <option>ETH</option><option>BSC</option><option>SOL</option><option>TRON</option>
+            </select>
+            <button onClick={handleScan} style={{ background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, border: "none", borderRadius: 10, padding: "12px 28px", color: "#070B14", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+              {scanning ? "Scanning..." : "Scan →"}
+            </button>
+          </div>
+        </div>
+
+        {/* Results */}
+        <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 28 }}>
+          <h3 style={{ color: COLORS.text, fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Recent Scans</h3>
+          {results.map((r, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: i < results.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: r.score > 60 ? `${COLORS.success}18` : `${COLORS.danger}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: r.score > 60 ? COLORS.success : COLORS.danger }}>
+                  {r.score}
+                </div>
+                <div>
+                  <div style={{ color: COLORS.text, fontSize: 14, fontFamily: "Space Mono", fontWeight: 600 }}>{r.address}</div>
+                  <div style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 2 }}>{r.chain} · {r.time}</div>
+                </div>
+              </div>
+              <span style={{
+                background: r.status === "Safe" ? `${COLORS.success}18` : `${COLORS.danger}18`,
+                color: r.status === "Safe" ? COLORS.success : COLORS.danger,
+                padding: "4px 12px", borderRadius: 100, fontSize: 12, fontWeight: 700
+              }}>{r.status}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    )}
+
+    {activeTab === "history" && (
+      <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 28 }}>
+        <h3 style={{ color: COLORS.text, fontWeight: 700, marginBottom: 20 }}>All Scans</h3>
+        {results.map((r, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: i < results.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
+            <span style={{ color: COLORS.text, fontFamily: "Space Mono", fontSize: 13 }}>{r.address}</span>
+            <span style={{ color: COLORS.textMuted, fontSize: 13 }}>{r.chain} · {r.time}</span>
+            <span style={{ color: r.score > 60 ? COLORS.success : COLORS.danger, fontWeight: 700 }}>Score: {r.score}</span>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {activeTab === "alerts" && (
+      <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 28 }}>
+        <h3 style={{ color: COLORS.text, fontWeight: 700, marginBottom: 20 }}>Alert Settings</h3>
+        {["Email Alerts", "Telegram Alerts", "High Risk Only", "Daily Summary"].map((a, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+            <span style={{ color: COLORS.text, fontSize: 15 }}>{a}</span>
+            <div style={{ width: 44, height: 24, background: i % 2 === 0 ? COLORS.gold : COLORS.border, borderRadius: 100, cursor: "pointer", position: "relative" }}>
+              <div style={{ width: 18, height: 18, background: "white", borderRadius: 100, position: "absolute", top: 3, left: i % 2 === 0 ? 23 : 3, transition: "left .2s" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {activeTab === "settings" && (
+      <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 28 }}>
+        <h3 style={{ color: COLORS.text, fontWeight: 700, marginBottom: 24 }}>Account Settings</h3>
+        {[["Full Name", "Mohamed"], ["Email", "mohamed@uae7guard.com"], ["Telegram Username", "@mohamed"]].map(([label, val], i) => (
+          <div key={i} style={{ marginBottom: 20 }}>
+            <label style={{ color: COLORS.textMuted, fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>{label}</label>
+            <input defaultValue={val} style={{ width: "100%", background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "12px 16px", color: COLORS.text, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+          </div>
+        ))}
+        <button style={{ background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, border: "none", borderRadius: 10, padding: "12px 28px", color: "#070B14", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Save Changes</button>
+      </div>
+    )}
+  </div>
+</div>
+```
+
+);
+}
+
+// ─── App Root ───
+export default function App() {
+const [page, setPage] = useState(“landing”);
+
+return (
+<div style={{ background: COLORS.bg, minHeight: “100vh”, color: COLORS.text }}>
+<Particles />
+<div style={{ position: “relative”, zIndex: 1 }}>
+{page === “landing” && <Landing setPage={setPage} />}
+{page === “login” && <AuthPage type="login" setPage={setPage} />}
+{page === “register” && <AuthPage type="register" setPage={setPage} />}
+{page === “dashboard” && <Dashboard setPage={setPage} />}
+</div>
+</div>
+);
+}
